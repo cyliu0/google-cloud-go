@@ -33,6 +33,9 @@ import (
 	sppb "google.golang.org/genproto/googleapis/spanner/v1"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
+	"google.golang.org/api/option"
+	gtransport "google.golang.org/api/transport/grpc"
+	"google.golang.org/grpc"
 )
 
 // sessionHandle is an interface for transactions to access Cloud Spanner
@@ -692,6 +695,22 @@ func (p *sessionPool) take(ctx context.Context) (*sessionHandle, error) {
 			if !p.isHealthy(s) {
 				continue
 			}
+			allOpts := []option.ClientOption{
+				option.WithEndpoint(endpoint),
+				option.WithScopes(Scope),
+				option.WithGRPCDialOption(
+					grpc.WithDefaultCallOptions(
+						grpc.MaxCallSendMsgSize(100<<20),
+						grpc.MaxCallRecvMsgSize(100<<20),
+					),
+				),
+				//option.WithGRPCConnectionPool(config.NumChannels),
+			}
+			grpcConn, err := gtransport.Dial(ctx, allOpts...)
+			if err != nil {
+				return nil ,err
+			}
+			s.client, err = vkit.NewClient(ctx, option.WithGRPCConn(grpcConn))
 			return &sessionHandle{session: s}, nil
 		}
 
