@@ -23,6 +23,7 @@ import (
 	"fmt"
 	"google.golang.org/api/option"
 	gtransport "google.golang.org/api/transport/grpc"
+	"google.golang.org/grpc"
 	"log"
 	"math"
 	"math/rand"
@@ -913,7 +914,18 @@ func (p *sessionPool) take(ctx context.Context) (*sessionHandle, error) {
 				continue
 			}
 			p.incNumInUse(ctx)
-			grpcConn, err := gtransport.Dial(ctx)
+			allOpts := []option.ClientOption{
+				option.WithEndpoint(endpoint),
+				option.WithScopes(Scope),
+				option.WithGRPCDialOption(
+					grpc.WithDefaultCallOptions(
+						grpc.MaxCallSendMsgSize(100<<20),
+						grpc.MaxCallRecvMsgSize(100<<20),
+					),
+				),
+				//option.WithGRPCConnectionPool(config.NumChannels),
+			}
+			grpcConn, err := gtransport.Dial(ctx, allOpts...)
 			if err != nil {
 				return nil ,err
 			}
