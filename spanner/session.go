@@ -21,6 +21,8 @@ import (
 	"container/list"
 	"context"
 	"fmt"
+	"google.golang.org/api/option"
+	gtransport "google.golang.org/api/transport/grpc"
 	"log"
 	"math"
 	"math/rand"
@@ -911,7 +913,12 @@ func (p *sessionPool) take(ctx context.Context) (*sessionHandle, error) {
 				continue
 			}
 			p.incNumInUse(ctx)
-			return p.newSessionHandle(s), nil
+			grpcConn, err := gtransport.Dial(ctx)
+			if err != nil {
+				return nil ,err
+			}
+			s.client, err = vkit.NewClient(ctx, option.WithGRPCConn(grpcConn))
+			return p.newSessionHandle(s), err
 		}
 
 		// No session available. Start the creation of a new batch of sessions
