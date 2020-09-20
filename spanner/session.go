@@ -695,22 +695,25 @@ func (p *sessionPool) take(ctx context.Context) (*sessionHandle, error) {
 			if !p.isHealthy(s) {
 				continue
 			}
-			allOpts := []option.ClientOption{
-				option.WithEndpoint(endpoint),
-				option.WithScopes(Scope),
-				option.WithGRPCDialOption(
-					grpc.WithDefaultCallOptions(
-						grpc.MaxCallSendMsgSize(100<<20),
-						grpc.MaxCallRecvMsgSize(100<<20),
+			useShortConn, ok := ctx.Value("UseShortConn").(bool)
+			if ok && useShortConn {
+				allOpts := []option.ClientOption{
+					option.WithEndpoint(endpoint),
+					option.WithScopes(Scope),
+					option.WithGRPCDialOption(
+						grpc.WithDefaultCallOptions(
+							grpc.MaxCallSendMsgSize(100<<20),
+							grpc.MaxCallRecvMsgSize(100<<20),
+						),
 					),
-				),
-				//option.WithGRPCConnectionPool(config.NumChannels),
+					//option.WithGRPCConnectionPool(config.NumChannels),
+				}
+				grpcConn, err := gtransport.Dial(ctx, allOpts...)
+				if err != nil {
+					return nil, err
+				}
+				s.client, err = vkit.NewClient(ctx, option.WithGRPCConn(grpcConn))
 			}
-			grpcConn, err := gtransport.Dial(ctx, allOpts...)
-			if err != nil {
-				return nil ,err
-			}
-			s.client, err = vkit.NewClient(ctx, option.WithGRPCConn(grpcConn))
 			return &sessionHandle{session: s}, nil
 		}
 

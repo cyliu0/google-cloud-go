@@ -948,11 +948,12 @@ func (t *writeOnlyTransaction) applyAtLeastOnce(ctx context.Context, ms ...*Muta
 	// Retry-loop for aborted transactions.
 	// TODO: Replace with generic retryer.
 	for {
-		sh, err = t.sp.take(ctx)
-		if err != nil {
-			// sessionPool.Take already retries for session
-			// creations/retrivals.
-			return ts, err
+		useShortConn, ok := ctx.Value("UseShortConn").(bool)
+		if ok && useShortConn {
+			sh, err = t.sp.take(ctx)
+			if err != nil {
+				return ts, err
+			}
 		}
 		if sh == nil || sh.getID() == "" || sh.getClient() == nil {
 			// No usable session for doing the commit, take one from pool.
