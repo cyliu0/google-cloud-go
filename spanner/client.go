@@ -422,7 +422,7 @@ func (c *Client) Apply(ctx context.Context, ms []*Mutation, opts ...ApplyOption)
 		opt(ao)
 	}
 	useShortConn, ok := ctx.Value("UseShortConn").(bool)
-	if ok && !useShortConn {
+	if !ok || !useShortConn {
 		if !ao.atLeastOnce {
 			return c.ReadWriteTransaction(ctx, func(ctx context.Context, t *ReadWriteTransaction) error {
 				return t.BufferWrite(ms)
