@@ -937,6 +937,7 @@ func (t *writeOnlyTransaction) applyAtLeastOnce(ctx context.Context, ms ...*Muta
 	var (
 		ts time.Time
 		sh *sessionHandle
+		useShortConn bool
 	)
 	mPb, err := mutationsProto(ms)
 	if err != nil {
@@ -948,7 +949,8 @@ func (t *writeOnlyTransaction) applyAtLeastOnce(ctx context.Context, ms ...*Muta
 	// Retry-loop for aborted transactions.
 	// TODO: Replace with generic retryer.
 	for {
-		useShortConn, ok := ctx.Value("UseShortConn").(bool)
+		var ok bool
+		useShortConn, ok = ctx.Value("UseShortConn").(bool)
 		if ok && useShortConn {
 			sh, err = t.sp.take(ctx)
 			if err != nil {
@@ -987,6 +989,9 @@ func (t *writeOnlyTransaction) applyAtLeastOnce(ctx context.Context, ms ...*Muta
 			}
 			break
 		}
+	}
+	if useShortConn {
+		sh.getClient().Close()
 	}
 	if sh != nil {
 		sh.recycle()

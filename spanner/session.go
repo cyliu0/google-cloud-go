@@ -297,7 +297,8 @@ func (s *session) delete(ctx context.Context) {
 	// session, it will be eventually garbage collected by Cloud Spanner.
 	err := s.client.DeleteSession(ctx, &sppb.DeleteSessionRequest{Name: s.getID()})
 	if err != nil {
-		log.Printf("Failed to delete session %v. Error: %v", s.getID(), err)
+		//Ignore this error info
+		//log.Printf("Failed to delete session %v. Error: %v", s.getID(), err)
 	}
 }
 
