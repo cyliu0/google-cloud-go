@@ -948,15 +948,15 @@ func (t *writeOnlyTransaction) applyAtLeastOnce(ctx context.Context, ms ...*Muta
 	var trailers metadata.MD
 	// Retry-loop for aborted transactions.
 	// TODO: Replace with generic retryer.
-	for {
-		var ok bool
-		useShortConn, ok = ctx.Value("UseShortConn").(bool)
-		if ok && useShortConn {
-			sh, err = t.sp.take(ctx)
-			if err != nil {
-				return ts, err
-			}
+	var ok bool
+	useShortConn, ok = ctx.Value("UseShortConn").(bool)
+	if ok && useShortConn {
+		sh, err = t.sp.take(ctx)
+		if err != nil {
+			return ts, err
 		}
+	}
+	for {
 		if sh == nil || sh.getID() == "" || sh.getClient() == nil {
 			// No usable session for doing the commit, take one from pool.
 			sh, err = t.sp.take(ctx)
